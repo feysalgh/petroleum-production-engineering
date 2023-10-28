@@ -1,5 +1,7 @@
 import math, scipy
-
+def calculate_api(gamma_o):
+    api = 141.5/gamma_o - 131.5
+    return api
 def calculate_Rs(gamma_g, api, p, t):
     Rs = gamma_g * (p * 10**(0.0125*(api))/(18 * 10**(0.00091*t))**1.2048)
     return Rs
@@ -121,3 +123,12 @@ def calculate_rho_g(gamma_g, p, z, T):
 def calculate_Bg(z, T, p):
     Bg = 0.0283 * z * T / p
     return Bg
+
+def C_to_F(C):
+    F = (C * 9/5) + 32
+    return F
+
+def mPa_to_psia(mPa):
+    psia = mPa * 145.038
+    return psia
+
