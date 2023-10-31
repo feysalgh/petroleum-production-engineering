@@ -132,3 +132,66 @@ def mPa_to_psia(mPa):
     psia = mPa * 145.038
     return psia
 
+def IPR_for_single_liquid_phase_radial_transient(k, h, phi, ct, Bo, mu_o, rw, t, s):
+    J_star = k * h / (162.6 * Bo * mu_o * (math.log10(t) + math.log10(k / (phi * mu_o * ct * rw **2)) - 3.23 + 0.87 * s))
+    return J_star
+
+def IPR_for_single_liquid_phase_radial_steady_state(k, h, Bo, mu_o, rw, re, s):
+    J_star = k * h / (141.2 * Bo * mu_o * (math.log(re / rw) + s))
+    return J_star
+
+def IPR_for_single_liquid_phase_radial_pseudo_steady_state(k, h, Bo, mu_o, rw, re, s):
+    J_star = k * h / (141.2 * Bo * mu_o * (math.log(re / rw) - 0.75 + s))
+    return J_star
+
+def vogels_equation_for_pwf(qmax, q, p):
+    pwf = 0.125 * p * ((81 - 80 * (q / qmax) ** 0.5) - 1)
+    return pwf
+
+def qmax(J_star, p):
+    qmax = J_star * p / 1.8
+    return qmax
+
+def J_star_using_qmax(qmax, p):
+    J_star = qmax / p * 1.8
+    return J_star
+
+def IPR_using_test_points(P, pb, pwf1, q1):
+    if pwf1 >= pb:
+        J_star = q1 / (P - pwf1)
+    else:
+        J_star = q1 / ((P - pb) + pb / 1.8 *(1 - 0.2 * (pwf1 / pb) - 0.8 * (pwf1 / pb) ** 2))
+    return J_star
+
+def qmax_for_test_points_two_phase(q1, pwf1, P):
+    qmax = q1 / (1 - 0.2 * (pwf1 / P) - 0.8 * (pwf1 / P) ** 2)
+    return qmax
+
+def vogels_equation_for_q(J_star, p, pb, pwf):
+    if pwf >= pb:
+        q = J_star * (p - pwf)
+    else:
+        q = J_star * (p - pb) + J_star * pb / 1.8 * (1 - 0.2 * (pwf / pb) - 0.8 * (pwf / pb) ** 2)
+    return q
+
+def fetkovichs_equation(q1, pwf1, q2, pwf2, P, pwf):
+    n = math.log10(q1 / q2) / math.log10((P ** 2 - pwf1 **2) / (P ** 2 - pwf2 **2))
+    C = q1 / (P ** 2 - pwf1 ** 2) ** n
+    q = C * (P ** 2 - pwf ** 2) ** n
+    return q
+
+def future_IPR_vogels_method(J_star_p, Bo_p, mu_o_p, kro_p, Bo_f, mu_o_f, kro_f):
+    J_star_f = J_star_p * (kro_f / (Bo_f * mu_o_f)) / (kro_p / (Bo_p * mu_o_p))
+    return J_star_f
+
+def vogels_equation_for_q_future(J_star_f, Pf, pwf):
+    q = J_star_f * Pf / 1.8 * (1 - 0.2 * (pwf / Pf) - 0.8 * (pwf / Pf) ** 2)
+    return q
+
+def J_prime(J_prime_i, pi, pe):
+    J_prime = J_prime_i * (pe / pi)
+    return J_prime
+
+def fetkovichs_method_for_future_well_performance(pe, pwf, J_prime):
+    q = J_prime * (pe ** 2 - pwf ** 2)
+    return q
