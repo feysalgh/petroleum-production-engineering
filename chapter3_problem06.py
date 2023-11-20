@@ -25,7 +25,7 @@ for i in pwf_f:
 
 plt.plot(q_p, pwf_p, label='present')
 plt.plot(q_f, pwf_f, label='future')
-plt.xlabel('q (stb/d))')
+plt.xlabel('q (stb/d)')
 plt.ylabel('Pwf (psi)')
 plt.legend()
 plt.show()

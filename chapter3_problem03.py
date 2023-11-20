@@ -20,6 +20,6 @@ q = []
 for i in pwf:
     q.append(equations.vogels_equation_for_q(J_star, P, pb, i))
 plt.plot(q, pwf)
-plt.xlabel('q (stb/d))')
+plt.xlabel('q (stb/d)')
 plt.ylabel('Pwf (psi)')
 plt.show()

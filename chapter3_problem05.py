@@ -19,7 +19,7 @@ for i in pwf:
 
 plt.plot(q_fetkovich, pwf, label='fetkovich')
 plt.plot(q_vogel, pwf, label='vogel')
-plt.xlabel('q (stb/d))')
+plt.xlabel('q (stb/d)')
 plt.ylabel('Pwf (psi)')
 plt.legend()
 plt.show()

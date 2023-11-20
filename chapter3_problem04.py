@@ -20,7 +20,7 @@ for i in pwf:
 
 plt.plot(q_A, pwf, label='well A')
 plt.plot(q_B, pwf, label='well B')
-plt.xlabel('q (stb/d))')
+plt.xlabel('q (stb/d)')
 plt.ylabel('Pwf (psi)')
 plt.legend()
 plt.show()

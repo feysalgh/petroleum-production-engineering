@@ -37,17 +37,17 @@ for i in pwf3:
 fig, axs = plt.subplots(1, 3, figsize=(15,5))
 
 axs[0].plot(q1, pwf1)
-axs[0].set_xlabel('q (stb/d))')
+axs[0].set_xlabel('q (stb/d)')
 axs[0].set_ylabel('Pwf (psi)')
 axs[0].set_title('transient flow')
 
 axs[1].plot(q2, pwf2)
-axs[1].set_xlabel('q (stb/d))')
+axs[1].set_xlabel('q (stb/d)')
 axs[1].set_ylabel('Pwf (psi)')
 axs[1].set_title('steady state flow')
 
 axs[2].plot(q3, pwf3)
-axs[2].set_xlabel('q (stb/d))')
+axs[2].set_xlabel('q (stb/d)')
 axs[2].set_ylabel('Pwf (psi)')
 axs[2].set_title('pseudo steady state flow')
 
