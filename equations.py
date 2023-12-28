@@ -1,14 +1,21 @@
 import math, scipy
+from scipy.optimize import fsolve
+
 def calculate_api(gamma_o):
     api = 141.5/gamma_o - 131.5
     return api
+
 def calculate_Rs(gamma_g, api, p, t):
-    Rs = gamma_g * (p * 10**(0.0125*(api))/(18 * 10**(0.00091*t))**1.2048)
+    Rs = gamma_g * (p / 18 * 10 ** (0.0125 * api) / 10 ** (0.00091 * t)) ** 1.2048
     return Rs
 
 def calculate_gamma_o_using_api(api):
     gamma_o = (141.5/(api + 131.5))
     return gamma_o
+
+def calculate_rho_using_gamma_o(gamma_o):
+    rho = 62.4 * gamma_o
+    return rho
 
 def calculate_rho_o_Standing_method(gamma_o, Rs, gamma_g, t):
     rho_o = (62.4 * gamma_o + 0.0136 * Rs * gamma_g)/(0.972 + 0.000147 * (Rs * ((gamma_g/gamma_o) ** 0.5) + 1.25 * t) ** 1.175)
@@ -195,3 +202,93 @@ def J_prime(J_prime_i, pi, pe):
 def fetkovichs_method_for_future_well_performance(pe, pwf, J_prime):
     q = J_prime * (pe ** 2 - pwf ** 2)
     return q
+
+def pressure_drop_in_single_phase_flow (rho, dz, du, u, L, D, f_F):
+    gc = 32.174
+    g = gc
+    dp = g / gc * rho * dz + rho * du ** 2 / (2 * gc) + rho * L / D * f_F * u ** 2 /gc
+    dp = dp / 144
+    return dp
+
+def dz_inclinced_wellbore(L, alpha):
+    alpha = math.radians(alpha)
+    dz = L * math.cos(alpha)
+    return dz
+
+def u_in_tubing(q, D):
+    u = 4 * q * 5.615 / (86400 * math.pi * D ** 2) 
+    return u
+
+def reynolds_number(rho, q, D, mu):
+    Re = 1.48 * q * rho / (mu * D)
+    return Re
+
+def friction_factor(Re, delta, d):
+    if Re < 2000:
+        f_F = 16 / Re
+    if Re > 2100:
+        eps = delta / d
+        f_F = 1 / (-4 * math.log10(eps / 3.7065 - 5.0452 / Re * math.log10(eps ** 1.1098 / 2.8257 + (7.149 / Re) ** 0.8981))) ** 2
+    return f_F
+
+def mass_for_1_stb(gamma_o, gamma_w, gamma_g, wor, gor):
+    M = 350.17 * (gamma_o + wor * gamma_w) + 0.0765 * gor * gamma_g
+    return M
+
+def volume_for_1_stb(Bo, wor, bw, gor, Rs, p, T, z):
+    V = 5.615 * (Bo + wor * bw) + (gor - Rs) * (14.7 / p) * ((T + 460) / 520) * z
+    return V
+
+def d_rho_v(M, D, qo):
+    d_rho_v = 1.4737 * 10 ** -5 * M * qo * 12 / D 
+    return d_rho_v
+
+def f2F(d_rho_v):
+    f2F = 10 ** (1.444 - 2.5 * math.log10(d_rho_v))
+    return f2F * 4
+
+def calculating_rho_at_any_point(api, p, t, gamma_g, wor, bw, gor, M):
+    gamma_o = calculate_gamma_o_using_api(api)
+    Rs = calculate_Rs(gamma_g, api, p, t)
+    Bo = calculate_Bo_Standing_method(Rs, gamma_o, gamma_g, t)
+    Ppc = calculate_Ppc_ahmed_method(gamma_g, 0, 0, 0)
+    Tpc = calculate_Tpc_ahmed_method(gamma_g, 0, 0, 0)
+    Tpr = (t + 460) / Tpc
+    Ppr = p / Ppc
+    z = calculate_zfactor_brill_and_beggs_method(Tpr, Ppr)
+    V = volume_for_1_stb(Bo, wor, bw, gor, Rs, p, t, z)
+    rho = M / V
+    return rho
+
+def friction_term(f2F, qo, M, D):
+    k = f2F * qo ** 2 * M ** 2 / (7.4137 * 10 ** 10 * D ** 5)
+    return k
+
+def finding_bhp(P_wellhead, rho_wellhead, k, L, api, bottomhole_temperature, gamma_g, wor, bw, gor, M):
+    pbh = P_wellhead
+    error_h = 1
+    for i in range(10):
+        rho_bottomhole = calculating_rho_at_any_point(api, pbh, bottomhole_temperature, gamma_g, wor, bw, gor, M)    
+        rho_avg = (rho_wellhead + rho_bottomhole) / 2
+        pbh = P_wellhead + (rho_avg + k / rho_avg) * L / 144
+        error_h = 144 * (pbh - P_wellhead) / (rho_avg + k / rho_avg) - L
+    return pbh
+
+def guo_ghalambor(theta, L, D, qg, gamma_g, qo, gamma_o, qw, gamma_w, qs, gamma_s, T_avg, A, fm, P_head):
+    
+    theta = math.radians(theta)
+    cos = math.cos(theta)
+    a = ((0.0765 * qg * gamma_g) + (350 * qo * gamma_o) + (350 * qw * gamma_w) + (62.4 * qs * gamma_s)) / (4.07 * T_avg * qg) * cos
+    b = (5.615 * qo + 5.615 * qw + qs) / (4.07 * T_avg * qg)
+    c = 0.00678 * T_avg * qg / A
+    d = 0.0016666 * (5.615 * qo + 5.615 * qw + qs) / A
+    e = fm / (2 * 32.17 * D) / cos
+    m = c * d * e / (math.cos(theta) + d ** 2 * e)
+    n = c ** 2 * e * math.cos(theta) / (math.cos(theta) + d ** 2 * e) ** 2
+    # 144 * b * (p - P_head) + 0.5 * (1 - 2 * b * m) * math.log(abs(((144 * p + m) ** 2 + n)/(144 * P_head + m) ** 2 + n)) - ((m + b / c * n - b * m ** 2) / n ** 0.5) * (math.atan((144 * p + m) / n ** 0.5) - math.atan((144 * P_head + m) / n ** 0.5)) - a * (math.cos(theta) + d ** 2 * e) * L
+    P_head = P_head * 144
+    def equation(p):
+        return b*p + (1-2*b*m)/2*math.log(abs(((p+m)**2+n)/((P_head+m)**2+n))) - (m+b*n-b*m*m)/math.sqrt(n)*(math.atan((p+m)/math.sqrt(n))-math.atan((P_head+m)/math.sqrt(n))) - a*(1+d**2*e)*L
+    p_solution = fsolve(equation, 100) / 144  # Starting guess for p is 100
+    return float(p_solution[0])
+
