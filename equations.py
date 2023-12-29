@@ -292,3 +292,38 @@ def guo_ghalambor(theta, L, D, qg, gamma_g, qo, gamma_o, qw, gamma_w, qs, gamma_
     p_solution = fsolve(equation, 100) / 144  # Starting guess for p is 100
     return float(p_solution[0])
 
+
+def Hagedorn_Brown_Correlation(L, p_head, T_head, T_bot, dz, gamma_g, gamma_l, ift, D, m_t, qg, A, mu_l, u_sl):
+    p = [p_head]
+    depth = [0]
+    Tpc = calculate_Tpc_ahmed_method(gamma_g, 0, 0, 0)
+    Ppc = calculate_Ppc_ahmed_method(gamma_g, 0, 0, 0)
+    for i in range (int(L / dz)):
+        eps = 0.0006
+        T = depth[i] * (T_bot - T_head) / L + T_head 
+        Tpr = (T + 460) / Tpc
+        Ppr = p[i] / Ppc
+        z = calculate_zfactor_brill_and_beggs_method(Tpr, Ppr)
+        mu_g = calculate_mu_carr_et_al_method(gamma_g, 0, 0, 0, T, Ppr, Tpr)
+        u_sg = 1 / A * qg * z * (460 + T) / (460+60) * (14.7 / p[i]) /86400
+        N_vl = 1.938 * u_sl * (62.4 * gamma_l / ift) ** 0.25
+        N_vg = 1.938 * u_sg * (62.4 * gamma_l / ift) ** 0.25
+        N_d = 120.872 * D * math.sqrt(62.4 * gamma_l / ift)
+        N_l = 0.15726 * mu_l * (1 / (62.4 * gamma_l * ift ** 3)) ** 0.25
+        x1 = math.log10(N_l) + 3
+        Y = - 2.69851 + 0.15840954 * x1 - 0.55099756 * x1 ** 2 + 0.54784917 * x1 ** 3 - 0.12194578 * x1 ** 4
+        Cn_l = 10 ** Y
+        x2 = N_vl / N_vg ** 0.575 * (p[i] / 14.7) ** 0.1 * Cn_l / N_d
+        y_L_psi = - 0.10306578 + 0.617774 * (math.log10(x2) + 6) - 0.632946 * (math.log10(x2) + 6) ** 2 + 0.29598 * (math.log10(x2) + 6) ** 3 - 0.0401 * (math.log10(x2) + 6) ** 4 
+        x3 = 0.012
+        # x3 = N_vg * N_l ** 0.38 / N_d ** 2.14
+        psi = 0.91162574 - 4.82175636 * x3 + 1232.25036621 * x3 ** 2 - 22253.57617 * x3 ** 3 + 116174.28125 * x3 ** 4
+        y_L = psi * y_L_psi
+        Re = 0.022 * m_t / ((D * 12) * mu_l ** y_L * mu_g ** (1 - y_L))
+        f = 1 / (- 4 * math.log10(eps / 3.7065 - 5.0452 / Re * math.log10(eps ** 1.1098 / 2.8257 + (7.149 / Re) ** 0.8981))) ** 2
+        rho_g = 28.97 * gamma_g * p[i] / z / 10.73 / (460 + T)
+        rho_avg = y_L * gamma_l * 62.4 + (1 - y_L) * rho_g
+        p_gradient = 1 / 144 * (rho_avg + f * m_t ** 2 / 7.413 / 10000000000 / D ** 5 / rho_avg)
+        p.append(p[i] + p_gradient * dz)
+        depth.append(depth[i] + dz)
+    return (p, depth)
